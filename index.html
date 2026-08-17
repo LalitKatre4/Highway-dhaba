@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Highway Dhaba — 90s Jhankar Sad Songs</title>
+  <style>
+    /* ─── Reset & Base ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent:        #ff6b35;
+      --accent2:       #f7c59f;
+      --glass-bg:      rgba(10, 8, 5, 0.60);
+      --glass-border:  rgba(255,255,255,0.13);
+      --text:          #f5f0e8;
+      --subtext:       #c4b49a;
+      --track-bg:      rgba(255,255,255,0.18);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      overflow: hidden;
+      background: #0a0805;
+      color: var(--text);
+      user-select: none;
+    }
+
+    /* ─── Background ────────────────────────────────────────────── */
+    .bg {
+      position: fixed; inset: 0;
+      background: url('background image/highway-dhaba.jpg') center center / cover no-repeat;
+      filter: brightness(0.70) saturate(1.2);
+      transform: scale(1.04);
+      transition: transform 1.2s ease, filter 1.2s ease;
+      z-index: 0;
+    }
+    .bg::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.15) 0%,
+        rgba(0,0,0,0.0)  40%,
+        rgba(0,0,0,0.65) 100%
+      );
+    }
+    body.playing .bg {
+      transform: scale(1.07);
+      filter: brightness(0.75) saturate(1.35);
+    }
+
+    /* ─── Particles ─────────────────────────────────────────────── */
+    #particles { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0;
+      animation: floatUp linear infinite;
+    }
+    body.playing .particle { opacity: 1; }
+    @keyframes floatUp {
+      0%   { transform: translateY(0) scale(1);    opacity: 0.75; }
+      100% { transform: translateY(-105vh) scale(0.1); opacity: 0; }
+    }
+
+    /* ─── Top Bar ───────────────────────────────────────────────── */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 26px;
+      z-index: 20;
+    }
+    .clock {
+      font-size: 0.88rem; font-weight: 700; letter-spacing: 0.06em;
+      color: rgba(255,255,255,0.9);
+      background: rgba(0,0,0,0.28);
+      padding: 5px 13px; border-radius: 20px;
+      backdrop-filter: blur(10px);
+      text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+    }
+    .online-badge {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 0.80rem; font-weight: 600;
+      color: rgba(255,255,255,0.88);
+      background: rgba(0,0,0,0.28);
+      padding: 5px 14px; border-radius: 20px;
+      backdrop-filter: blur(10px);
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #4ade80; box-shadow: 0 0 7px #4ade80;
+      animation: blink 2s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.55;transform:scale(1.35)} }
+
+    .badges { display: flex; gap: 9px; }
+    .badge {
+      display: flex; align-items: center; gap: 5px;
+      padding: 5px 13px; border-radius: 20px;
+      font-size: 0.76rem; font-weight: 700; letter-spacing: 0.04em;
+      backdrop-filter: blur(10px);
+      transition: transform .2s, box-shadow .2s;
+      text-decoration: none;
+    }
+    .badge:hover { transform: translateY(-1px); box-shadow: 0 5px 18px rgba(0,0,0,.4); }
+    .badge.sp { background: rgba(30,215,96,.18); color: #1ed760; border:1px solid rgba(30,215,96,.3); }
+    .badge.yt { background: rgba(255,0,0,.16);   color: #ff4444; border:1px solid rgba(255,0,0,.28); }
+
+    /* ─── Hero Title ────────────────────────────────────────────── */
+    .hero {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -58%);
+      text-align: center; z-index: 5;
+      pointer-events: none;
+    }
+    .hero-title {
+      font-size: clamp(3.2rem, 8.5vw, 7.5rem);
+      font-weight: 900; line-height: 1.0;
+      color: #fff;
+      text-shadow:
+        0 0 55px rgba(255,107,53,.75),
+        0 0 110px rgba(255,107,53,.38),
+        3px 4px 0 rgba(0,0,0,.55);
+      animation: heroFloat 6s ease-in-out infinite;
+    }
+    .hero-title span { display: block; }
+    @keyframes heroFloat {
+      0%,100%{ transform: translateY(0); }
+      50%    { transform: translateY(-9px); }
+    }
+    .hero-sub {
+      margin-top: 12px;
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      opacity: 0.85;
+      text-shadow: 0 1px 8px rgba(0,0,0,0.6);
+    }
+
+    /* ─── Hidden YouTube iframe ──────────────────────────────────── */
+    #yt-player {
+      position: absolute;
+      width: 1px; height: 1px;
+      opacity: 0; pointer-events: none;
+      top: -9999px; left: -9999px;
+    }
+
+    /* ─── Playlist Panel ────────────────────────────────────────── */
+    .playlist-toggle {
+      position: fixed; right: 24px; bottom: 130px;
+      z-index: 25;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 50%;
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--text);
+      backdrop-filter: blur(14px);
+      transition: background .2s, transform .2s, box-shadow .2s;
+      box-shadow: 0 4px 18px rgba(0,0,0,.45);
+    }
+    .playlist-toggle:hover {
+      background: rgba(255,107,53,.22);
+      transform: scale(1.08);
+      box-shadow: 0 6px 24px rgba(255,107,53,.3);
+    }
+
+    .playlist-panel {
+      position: fixed; right: 24px; bottom: 130px;
+      z-index: 24;
+      width: 290px;
+      max-height: 380px;
+      background: rgba(10,8,5,0.78);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      backdrop-filter: blur(22px);
+      overflow: hidden;
+      transform: translateY(16px) scale(0.96);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform .28s cubic-bezier(.34,1.36,.64,1), opacity .22s ease;
+      box-shadow: 0 12px 45px rgba(0,0,0,.65);
+    }
+    .playlist-panel.open {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+      pointer-events: all;
+    }
+    .playlist-header {
+      padding: 14px 16px 10px;
+      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--accent);
+      border-bottom: 1px solid rgba(255,255,255,.07);
+    }
+    .playlist-body {
+      overflow-y: auto;
+      max-height: 320px;
+    }
+    .playlist-body::-webkit-scrollbar { width: 4px; }
+    .playlist-body::-webkit-scrollbar-track { background: transparent; }
+    .playlist-body::-webkit-scrollbar-thumb { background: rgba(255,107,53,.4); border-radius: 4px; }
+
+    .pl-item {
+      display: flex; align-items: center; gap: 11px;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: background .18s;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+    }
+    .pl-item:hover { background: rgba(255,107,53,.1); }
+    .pl-item.active { background: rgba(255,107,53,.18); }
+    .pl-num {
+      font-size: 0.7rem; color: var(--subtext);
+      min-width: 18px; text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .pl-item.active .pl-num { color: var(--accent); }
+    .pl-info { flex: 1; min-width: 0; }
+    .pl-name {
+      font-size: 0.8rem; font-weight: 600; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .pl-item.active .pl-name { color: var(--accent2); }
+    .pl-singer {
+      font-size: 0.68rem; color: var(--subtext); margin-top: 1px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    /* mini eq */
+    .pl-eq { display: none; align-items: flex-end; gap: 1.5px; height: 14px; }
+    .pl-item.active .pl-eq { display: flex; }
+    .pl-item.active .pl-num { display: none; }
+    .pl-bar { width: 2.5px; border-radius: 2px; background: var(--accent); }
+    body.playing .pl-item.active .pl-bar:nth-child(1) { animation: eq1 .7s ease-in-out infinite; }
+    body.playing .pl-item.active .pl-bar:nth-child(2) { animation: eq2 .9s ease-in-out infinite; }
+    body.playing .pl-item.active .pl-bar:nth-child(3) { animation: eq3 .6s ease-in-out infinite; }
+    body:not(.playing) .pl-item.active .pl-bar { height: 4px !important; }
+
+    /* ─── Player Card ───────────────────────────────────────────── */
+    .player-wrap {
+      position: fixed; bottom: 32px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      width: min(640px, 94vw);
+    }
+    .player {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 100px;
+      backdrop-filter: blur(26px) saturate(1.7);
+      -webkit-backdrop-filter: blur(26px) saturate(1.7);
+      padding: 13px 20px 13px 13px;
+      display: flex; align-items: center; gap: 14px;
+      box-shadow:
+        0 8px 42px rgba(0,0,0,.58),
+        0 1px 0 rgba(255,255,255,.06) inset;
+      transition: box-shadow .3s;
+    }
+    .player:hover {
+      box-shadow:
+        0 12px 52px rgba(255,107,53,.22),
+        0 1px 0 rgba(255,255,255,.06) inset;
+    }
+
+    /* Album Art */
+    .album-art {
+      flex-shrink: 0;
+      width: 54px; height: 54px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      box-shadow: 0 0 16px rgba(255,107,53,.5);
+      background: linear-gradient(135deg, #1a0a00 0%, #3a1500 50%, #ff6b35 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      overflow: hidden;
+      position: relative;
+    }
+    body.playing .album-art { animation: spin 9s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Track Info */
+    .track-info { flex: 1; min-width: 0; }
+    .track-name {
+      font-size: 0.88rem; font-weight: 700; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .track-artist {
+      font-size: 0.70rem; color: var(--subtext); margin-top: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* Progress */
+    .progress-wrap {
+      display: flex; align-items: center; gap: 7px;
+      margin-top: 8px;
+    }
+    .t-label {
+      font-size: 0.62rem; color: var(--subtext);
+      font-variant-numeric: tabular-nums;
+      min-width: 30px; white-space: nowrap;
+    }
+    .t-label.right { text-align: right; }
+    .prog-bar {
+      flex: 1; height: 4px; border-radius: 4px;
+      background: var(--track-bg);
+      cursor: pointer; position: relative;
+    }
+    .prog-bar::before {
+      content: ''; position: absolute;
+      top: -7px; left: 0; right: 0; bottom: -7px;
+    }
+    .prog-fill {
+      height: 100%; border-radius: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      position: relative;
+      box-shadow: 0 0 8px rgba(255,107,53,.55);
+      transition: width .25s linear;
+      pointer-events: none;
+    }
+    .prog-fill::after {
+      content: ''; position: absolute;
+      right: -5px; top: 50%; transform: translateY(-50%);
+      width: 11px; height: 11px;
+      border-radius: 50%; background: #fff;
+      box-shadow: 0 0 6px rgba(255,107,53,.8);
+      opacity: 0; transition: opacity .2s;
+    }
+    .prog-bar:hover .prog-fill::after { opacity: 1; }
+
+    /* EQ indicator (inside player) */
+    .eq-bars {
+      flex-shrink: 0;
+      display: flex; align-items: flex-end; gap: 2px;
+      height: 18px; opacity: 0;
+      transition: opacity .3s;
+    }
+    body.playing .eq-bars { opacity: 1; }
+    .eq-bar { width: 3px; border-radius: 2px; background: var(--accent); }
+    @keyframes eq1 { 0%,100%{height:4px} 50%{height:15px} }
+    @keyframes eq2 { 0%,100%{height:11px} 50%{height:4px} }
+    @keyframes eq3 { 0%,100%{height:7px} 50%{height:17px} }
+    @keyframes eq4 { 0%,100%{height:14px} 50%{height:5px} }
+    .eq-bar:nth-child(1) { animation: eq1 .70s ease-in-out infinite; }
+    .eq-bar:nth-child(2) { animation: eq2 .90s ease-in-out infinite; }
+    .eq-bar:nth-child(3) { animation: eq3 .60s ease-in-out infinite; }
+    .eq-bar:nth-child(4) { animation: eq4 1.1s ease-in-out infinite; }
+
+    /* Controls */
+    .controls { flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
+    .ctrl {
+      background: none; border: none; cursor: pointer;
+      color: rgba(255,255,255,.72); padding: 7px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      transition: color .2s, background .2s, transform .15s;
+    }
+    .ctrl:hover { color: #fff; background: rgba(255,255,255,.09); transform: scale(1.12); }
+    .ctrl:active { transform: scale(0.93); }
+    .ctrl svg { display: block; pointer-events: none; }
+
+    .ctrl.play {
+      width: 46px; height: 46px;
+      background: linear-gradient(135deg, var(--accent), #e05520) !important;
+      color: #fff !important;
+      box-shadow: 0 4px 18px rgba(255,107,53,.55);
+    }
+    .ctrl.play:hover {
+      background: linear-gradient(135deg, #ff8a5c, var(--accent)) !important;
+      box-shadow: 0 6px 26px rgba(255,107,53,.75);
+      transform: scale(1.09) !important;
+    }
+
+    /* Volume */
+    .vol-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    input[type=range].vol {
+      -webkit-appearance: none; appearance: none;
+      width: 58px; height: 4px;
+      border-radius: 4px; background: var(--track-bg);
+      cursor: pointer; outline: none;
+    }
+    input[type=range].vol::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px; height: 12px;
+      border-radius: 50%; background: var(--accent);
+      box-shadow: 0 0 6px rgba(255,107,53,.6);
+      cursor: pointer;
+    }
+
+    /* ─── Loading overlay ───────────────────────────────────────── */
+    #loader {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,.7);
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 14px;
+      backdrop-filter: blur(6px);
+    }
+    #loader.hidden { display: none; }
+    .spinner {
+      width: 42px; height: 42px;
+      border: 3px solid rgba(255,107,53,.25);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin2 .85s linear infinite;
+    }
+    @keyframes spin2 { to { transform: rotate(360deg); } }
+    .loader-txt { font-size: 0.82rem; color: var(--subtext); letter-spacing: 0.06em; }
+
+    /* ─── Responsive ────────────────────────────────────────────── */
+    @media (max-width: 480px) {
+      .vol-wrap { display: none; }
+      .hero-title { font-size: 3rem; }
+      .playlist-panel { width: 260px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loader">
+  <div class="spinner"></div>
+  <div class="loader-txt">Loading player…</div>
+</div>
+
+<!-- Background -->
+<div class="bg"></div>
+
+<!-- Particles -->
+<div id="particles"></div>
+
+<!-- Hidden YouTube player target -->
+<div id="yt-player"></div>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="clock" id="clock">--:-- --</div>
+  <div class="online-badge">
+    <span class="dot"></span>
+    <span id="onlineCount">32</span> online
+  </div>
+  <div class="badges">
+    <a class="badge sp" href="https://open.spotify.com" target="_blank" rel="noopener">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.5 17.3c-.22.36-.68.47-1.04.25-2.86-1.75-6.46-2.14-10.7-1.17-.41.09-.82-.17-.91-.58-.09-.41.17-.82.58-.91 4.64-1.06 8.62-.6 11.82 1.35.36.22.47.68.25 1.06zm1.47-3.27c-.28.45-.87.59-1.32.31-3.27-2.01-8.26-2.6-12.13-1.42-.5.15-1.03-.13-1.18-.63-.15-.5.13-1.03.63-1.18 4.42-1.34 9.91-.69 13.69 1.62.45.28.59.87.31 1.3zm.13-3.4C15.5 8.4 9 8.2 5.5 9.27c-.6.18-1.23-.15-1.41-.75-.18-.6.15-1.23.75-1.41 4.06-1.23 10.82-1 15.1 1.67.54.32.72 1.02.4 1.56-.32.54-1.02.72-1.56.4l-.18-.11z"/></svg>
+      Spotify
+    </a>
+    <a class="badge yt" href="https://music.youtube.com" target="_blank" rel="noopener">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+      YT Music
+    </a>
+  </div>
+</div>
+
+<!-- Hero -->
+<div class="hero">
+  <h1 class="hero-title">
+    <span>सफ़रनामा</span>
+    <span>ढाबा</span>
+  </h1>
+  <p class="hero-sub">90s Jhankar Beats — Sad Songs</p>
+</div>
+
+<!-- Playlist toggle button -->
+<button class="playlist-toggle" id="plToggle" title="Playlist">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+    <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+    <line x1="8" y1="18" x2="21" y2="18"/>
+    <line x1="3" y1="6"  x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/>
+    <line x1="3" y1="18" x2="3.01" y2="18"/>
+  </svg>
+</button>
+
+<!-- Playlist Panel -->
+<div class="playlist-panel" id="plPanel">
+  <div class="playlist-header">🎵 Playlist — 15 Songs</div>
+  <div class="playlist-body" id="plBody"></div>
+</div>
+
+<!-- Player -->
+<div class="player-wrap">
+  <div class="player">
+
+    <!-- Album Art -->
+    <div class="album-art" id="albumArt">🎵</div>
+
+    <!-- Info + Progress -->
+    <div class="track-info">
+      <div class="track-name"   id="trackName">Jeeye To Jeeye Kaise</div>
+      <div class="track-artist" id="trackArtist">Kumar Sanu · Ishtar Music</div>
+      <div class="progress-wrap">
+        <span class="t-label" id="curTime">0:00</span>
+        <div class="prog-bar" id="progBar">
+          <div class="prog-fill" id="progFill" style="width:0%"></div>
+        </div>
+        <span class="t-label right" id="totTime">0:00</span>
+      </div>
+    </div>
+
+    <!-- EQ bars -->
+    <div class="eq-bars">
+      <div class="eq-bar"></div><div class="eq-bar"></div>
+      <div class="eq-bar"></div><div class="eq-bar"></div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <!-- Prev -->
+      <button class="ctrl" id="btnPrev" title="Previous song">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+        </svg>
+      </button>
+
+      <!-- Rewind 10s -->
+      <button class="ctrl" id="btnRew" title="Rewind 10s">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z" opacity=".4"/>
+          <path d="M11 18V6l-8.5 6 8.5 6z"/>
+        </svg>
+      </button>
+
+      <!-- Play/Pause -->
+      <button class="ctrl play" id="btnPlay" title="Play / Pause">
+        <svg id="iconPlay"  width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        <svg id="iconPause" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+      </button>
+
+      <!-- Forward 10s -->
+      <button class="ctrl" id="btnFwd" title="Forward 10s">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13 6v12l8.5-6L13 6zM4 18l8.5-6L4 6v12z" opacity=".4"/>
+          <path d="M13 6v12l8.5-6L13 6z"/>
+        </svg>
+      </button>
+
+      <!-- Next -->
+      <button class="ctrl" id="btnNext" title="Next song">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Volume -->
+    <div class="vol-wrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="rgba(255,255,255,0.5)">
+        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+      </svg>
+      <input type="range" class="vol" id="volSlider" min="0" max="100" step="1" value="80" />
+    </div>
+
+  </div>
+</div>
+
+<!-- YouTube IFrame API -->
+<script src="https://www.youtube.com/iframe_api"></script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   PLAYLIST  — Ishtar Music 90s Bollywood Sad Songs (Jhankar Beats)
+   YouTube Playlist ID: PLO6WOx_nE9ULl-FgE0NPR4c6BSu-1-CPJ
+   ═══════════════════════════════════════════════════════════════ */
+const PLAYLIST = [
+  { title: "Jeeye To Jeeye Kaise",          artist: "Kumar Sanu",            art: "🎸" },
+  { title: "Kaash Kahin Aisa Hota",          artist: "Kumar Sanu",            art: "🌙" },
+  { title: "Aankh Hai Bhari Bhari",          artist: "Kumar Sanu",            art: "💧" },
+  { title: "O Rabba",                        artist: "Kumar Sanu",            art: "🕌" },
+  { title: "Aitbaar Nahi Karna",             artist: "Abhijeet · Sadhana",    art: "💔" },
+  { title: "Mile Tum Se Bichhad Ke Hum",     artist: "Kumar Sanu",            art: "🌅" },
+  { title: "Tera Gham Agar Na Hota",         artist: "Kumar Sanu",            art: "🎵" },
+  { title: "Koi Kya Pehchaane",              artist: "Kumar Sanu",            art: "🌿" },
+  { title: "O Yaara Kaisi Hai Teri Bewafai", artist: "Udit Narayan",          art: "🌹" },
+  { title: "Dil Jab Se Toot Gaya",           artist: "Kumar Sanu · Alka",     art: "🥀" },
+  { title: "Der Se Hua",                     artist: "Kumar Sanu · Alka",     art: "⏳" },
+  { title: "Tere Dard Se Dil Aabad Raha",    artist: "Kumar Sanu",            art: "🎶" },
+  { title: "Chhupana Bhi Nahin Aata",        artist: "Vinod Rathod",          art: "🌸" },
+  { title: "Tota Tota",                      artist: "Kumar Sanu",            art: "🦜" },
+  { title: "Kaash Tum Mujhse Ek Baar",       artist: "Kumar Sanu",            art: "⭐" },
+];
+
+const PLAYLIST_ID = "PLO6WOx_nE9ULl-FgE0NPR4c6BSu-1-CPJ";
+
+/* ── State ──────────────────────────────────────────────────── */
+let player      = null;
+let playerReady = false;
+let isPlaying   = false;
+let currentIdx  = 0;
+let timerTick   = null;
+
+/* ── DOM refs ───────────────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const loader    = $('loader');
+const btnPlay   = $('btnPlay');
+const btnPrev   = $('btnPrev');
+const btnNext   = $('btnNext');
+const btnRew    = $('btnRew');
+const btnFwd    = $('btnFwd');
+const iconPlay  = $('iconPlay');
+const iconPause = $('iconPause');
+const progFill  = $('progFill');
+const progBar   = $('progBar');
+const curTimeEl = $('curTime');
+const totTimeEl = $('totTime');
+const volSlider = $('volSlider');
+const trackName = $('trackName');
+const trackArtist = $('trackArtist');
+const albumArt  = $('albumArt');
+const plBody    = $('plBody');
+const plPanel   = $('plPanel');
+const plToggle  = $('plToggle');
+
+/* ── Helpers ────────────────────────────────────────────────── */
+function fmt(s) {
+  if (!s || isNaN(s) || s < 0) return '0:00';
+  const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+  return `${m}:${String(sec).padStart(2,'0')}`;
+}
+
+function setPlayState(state) {
+  isPlaying = state;
+  iconPlay.style.display  = state ? 'none'  : 'block';
+  iconPause.style.display = state ? 'block' : 'none';
+  document.body.classList.toggle('playing', state);
+}
+
+function updateTrackUI(idx) {
+  const t = PLAYLIST[idx];
+  trackName.textContent   = t.title;
+  trackArtist.textContent = t.artist + ' · Ishtar Music';
+  albumArt.textContent    = t.art;
+  // highlight playlist
+  document.querySelectorAll('.pl-item').forEach((el,i) => {
+    el.classList.toggle('active', i === idx);
+  });
+  // scroll active into view
+  const active = plBody.querySelector('.pl-item.active');
+  if (active) active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+/* ── Progress tick ──────────────────────────────────────────── */
+function startTick() {
+  clearInterval(timerTick);
+  timerTick = setInterval(() => {
+    if (!playerReady || !player) return;
+    try {
+      const cur  = player.getCurrentTime() || 0;
+      const dur  = player.getDuration()    || 0;
+      const pct  = dur > 0 ? (cur / dur) * 100 : 0;
+      progFill.style.width  = pct + '%';
+      curTimeEl.textContent = fmt(cur);
+      totTimeEl.textContent = fmt(dur);
+    } catch(e) {}
+  }, 500);
+}
+
+/* ── YouTube IFrame API callback ────────────────────────────── */
+window.onYouTubeIframeAPIReady = function () {
+  player = new YT.Player('yt-player', {
+    height: '1',
+    width:  '1',
+    playerVars: {
+      listType:   'playlist',
+      list:       PLAYLIST_ID,
+      index:      0,
+      autoplay:   0,
+      controls:   0,
+      disablekb:  1,
+      fs:         0,
+      modestbranding: 1,
+      rel:        0,
+      origin:     location.origin || 'http://localhost',
+    },
+    events: {
+      onReady:       onPlayerReady,
+      onStateChange: onPlayerStateChange,
+    }
+  });
+};
+
+function onPlayerReady(e) {
+  playerReady = true;
+  loader.classList.add('hidden');
+  player.setVolume(80);
+  updateTrackUI(0);
+  startTick();
+}
+
+function onPlayerStateChange(e) {
+  const S = YT.PlayerState;
+  if (e.data === S.PLAYING) {
+    setPlayState(true);
+    startTick();
+    // sync current index from YT
+    try {
+      const idx = player.getPlaylistIndex();
+      if (idx >= 0 && idx !== currentIdx) {
+        currentIdx = idx;
+        updateTrackUI(currentIdx);
+      }
+    } catch(_) {}
+  } else if (e.data === S.PAUSED || e.data === S.ENDED) {
+    setPlayState(false);
+    if (e.data === S.ENDED) {
+      setTimeout(() => { player.nextVideo(); }, 800);
+    }
+  } else if (e.data === S.BUFFERING) {
+    /* keep state as-is */
+  }
+}
+
+/* ── Controls ───────────────────────────────────────────────── */
+btnPlay.addEventListener('click', () => {
+  if (!playerReady) return;
+  if (isPlaying) { player.pauseVideo(); }
+  else           { player.playVideo();  }
+});
+
+btnPrev.addEventListener('click', () => {
+  if (!playerReady) return;
+  currentIdx = (currentIdx - 1 + PLAYLIST.length) % PLAYLIST.length;
+  player.playVideoAt(currentIdx);
+  updateTrackUI(currentIdx);
+});
+
+btnNext.addEventListener('click', () => {
+  if (!playerReady) return;
+  currentIdx = (currentIdx + 1) % PLAYLIST.length;
+  player.playVideoAt(currentIdx);
+  updateTrackUI(currentIdx);
+});
+
+btnRew.addEventListener('click', () => {
+  if (!playerReady) return;
+  try { player.seekTo(Math.max(0, player.getCurrentTime() - 10), true); } catch(_) {}
+});
+
+btnFwd.addEventListener('click', () => {
+  if (!playerReady) return;
+  try { player.seekTo(player.getCurrentTime() + 10, true); } catch(_) {}
+});
+
+/* Seek on click */
+progBar.addEventListener('click', e => {
+  if (!playerReady) return;
+  try {
+    const rect = progBar.getBoundingClientRect();
+    const pct  = (e.clientX - rect.left) / rect.width;
+    player.seekTo(pct * player.getDuration(), true);
+  } catch(_) {}
+});
+
+/* Volume */
+volSlider.addEventListener('input', () => {
+  if (playerReady) player.setVolume(Number(volSlider.value));
+});
+
+/* Keyboard shortcuts */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.code === 'Space')      { e.preventDefault(); btnPlay.click(); }
+  if (e.code === 'ArrowLeft')  btnRew.click();
+  if (e.code === 'ArrowRight') btnFwd.click();
+  if (e.code === 'ArrowUp')    btnPrev.click();
+  if (e.code === 'ArrowDown')  btnNext.click();
+});
+
+/* ── Playlist panel ─────────────────────────────────────────── */
+PLAYLIST.forEach((t, i) => {
+  const div = document.createElement('div');
+  div.className = 'pl-item' + (i === 0 ? ' active' : '');
+  div.innerHTML = `
+    <div class="pl-eq">
+      <div class="pl-bar" style="height:6px"></div>
+      <div class="pl-bar" style="height:10px"></div>
+      <div class="pl-bar" style="height:4px"></div>
+    </div>
+    <span class="pl-num">${i + 1}</span>
+    <div class="pl-info">
+      <div class="pl-name">${t.title}</div>
+      <div class="pl-singer">${t.artist}</div>
+    </div>
+    <span style="font-size:1rem">${t.art}</span>
+  `;
+  div.addEventListener('click', () => {
+    if (!playerReady) return;
+    currentIdx = i;
+    player.playVideoAt(currentIdx);
+    updateTrackUI(currentIdx);
+    plPanel.classList.remove('open');
+  });
+  plBody.appendChild(div);
+});
+
+plToggle.addEventListener('click', () => plPanel.classList.toggle('open'));
+document.addEventListener('click', e => {
+  if (!plPanel.contains(e.target) && e.target !== plToggle)
+    plPanel.classList.remove('open');
+});
+
+/* ── Clock ──────────────────────────────────────────────────── */
+function updateClock() {
+  const now = new Date();
+  let h = now.getHours(), m = now.getMinutes();
+  const ap = h >= 12 ? 'pm' : 'am';
+  h = h % 12 || 12;
+  $('clock').textContent = `${h}:${String(m).padStart(2,'0')} ${ap}`;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+/* ── Online count wobble ────────────────────────────────────── */
+let onlineN = 32;
+setInterval(() => {
+  onlineN += Math.floor(Math.random() * 3) - 1;
+  onlineN = Math.max(20, Math.min(65, onlineN));
+  $('onlineCount').textContent = onlineN;
+}, 4200);
+
+/* ── Particles ──────────────────────────────────────────────── */
+const pc = $('particles');
+for (let i = 0; i < 20; i++) {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  p.style.left   = Math.random() * 100 + '%';
+  p.style.bottom = Math.random() * 15 + '%';
+  p.style.animationDelay    = (Math.random() * 7) + 's';
+  p.style.animationDuration = (4 + Math.random() * 6) + 's';
+  const sz = 2 + Math.random() * 4;
+  p.style.width = p.style.height = sz + 'px';
+  pc.appendChild(p);
+}
+</script>
+</body>
+</html>
